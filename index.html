@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Growing Up Fisher!</title>
+    <script type="text/javascript" src="cocos2d-js-v3.1-beta-lite.js" charset="UTF-8"></script>
+</head>
+<body style="background-color: #100202">   
+    <canvas id="gameCanvas" width="450" height="700"></canvas>
+    <script type="text/javascript">
+
+    /**
+     * Returns a random integer between min (inclusive) and max (inclusive)
+     * Using Math.round() will give you a non-uniform distribution!
+     */
+    function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    function clamp(number, min, max) {
+      return Math.max(min, Math.min(number, max));
+    }
+
+    var progress = 0;
+    var childType = ["jock","geek","artist","responsible","scholar","moderate","destructive"];
+    var childBorn = -1;
+    var newBorn = {health : 5,iq : 5, creativity : 5,relationship : 5};
+    var colorIndex = 0;
+    var quotes = [
+    "Many children threaten at times to run away from home - this is the only thing that keeps many parents going",
+    "You can't scare me. I have children!",
+    "I don't think my parents liked me. They put a live teddy bear in my crib",
+    "If you've never been hated by your child, you've never been a parent",
+    "We are the people our parents warned us about",
+    "Having children makes you no more a parent than having a piano makes you a pianist"
+    ];
+    var colors = {
+      green : cc.color(120,192,189,255),
+      purple : cc.color(121,98,202,255),
+      red : cc.color(224,118,119,255),
+      blue : cc.color(118,172,224,255)
+    };
+    var res = {
+        background : "res/background.png",
+        button : "res/button.png",
+        font : {type:"font", name:"roboto", srcs:["res/font.ttf"]},
+        icon: "res/icon.jpg",
+        music: "res/sfx_01.mp3",
+        question: "res/sfx_02.mp3",
+        click: "res/click.mp3",
+        age6: "res/6-8.png",
+        age8: "res/8-12.png",
+        age12: "res/12-16.png",
+        age16: "res/16-18.png"
+     
+    };
+
+    var gameVaribles = [
+                        [6,1,1,0,-1,0,-1  ],
+                        [6,1,2,1,1,1,1  ],
+                        [6,1,3,-2,0,1,2  ],
+                        [6,1,4,-1,-1,-1,-2  ],
+                        [7,2,1,0,-2,1,1  ],
+                        [7,2,2,-1,-1,-1,-2  ],
+                        [7,2,3,0,1,1,-1  ],
+                        [7,2,4,-1,-1,-1,0  ],
+                        [8,3,1,0,-1,-1,-1  ],
+                        [8,3,2,1,1,1,1  ],
+                        [8,3,3,-2,-1,-1,2  ],
+                        [8,3,4,-1,-1,-1,-2  ],
+                        [9,4,1,-1,0,0,-1  ],
+                        [9,4,2,0,-1,1,2  ],
+                        [9,4,3,1,2,1,0  ],
+                        [9,4,4,-2,0,0,0  ],
+                        [10,5,1,0,1,0,-1  ],
+                        [10,5,2,0,1,1,0  ],
+                        [10,5,3,1,-2,2,2  ],
+                        [10,5,4,-1,1,1,-2  ],
+                        [11,6,1,0,-2,0,0  ],
+                        [11,6,2,0,0,-1,-1  ],
+                        [11,6,3,-2,0,0,-2  ],
+                        [11,6,4,0,0,0,0  ],
+                        [12,7,1,0,0,0,-1  ],
+                        [12,7,2,0,0,2,1  ],
+                        [12,7,3,1,1,-1,-1  ],
+                        [12,7,4,0,1,0,-1  ],
+                        [13,8,1,-2,0,0,-2  ],
+                        [13,8,2,0,0,1,1  ],
+                        [13,8,3,0,1,0,0  ],
+                        [13,8,4,2,2,2,2  ],
+                        [14,9,1,0,0,1,1  ],
+                        [14,9,2,2,1,0,0  ],
+                        [14,9,3,-1,0,0,-1  ],
+                        [14,9,4,-2,0,0,0  ],
+                        [15,10,1,2,0,2,2  ],
+                        [15,10,2,1,2,0,-1  ],
+                        [15,10,3,-2,0,-2,-1  ],
+                        [15,10,4,0,-2,-1,-2  ],
+                        [16,11,1,0,0,0,-1  ],
+                        [16,11,2,0,-2,-1,2  ],
+                        [16,11,3,1,1,0,-1  ],
+                        [16,11,4,-1,0,0,-1  ],
+                        [17,12,1,-1,-2,2,2  ],
+                        [17,12,2,0,2,-1,-2  ],
+                        [17,12,3,1,1,1,1  ],
+                        [17,12,4,1,1,0,-1  ]
+                      ];
+
+    var levelJSON = [
+                      [6,1,"Tantrum","Your child demands for an Ice-Cream and since you were on a business call you ignored it, so he throws your wrist watch on the floor. Now what will be your reaction ?","Ignore him, get on to your call and later resolve this issue.","Cancel your call and counsel him.","Get him what he demands.","Beat him up."  ],
+                      [7,2,"Moral Values","Your child has stolen a pencil of some other kid in school and you caught him. What will be your Reaction?","You will ignore his action and let him learn the moral values by himself.","You will take the pencil and return it to that kid.","You will teach him morals and take away the pencil.","You will scold him but get him a new pencil."  ],
+                      [8,3,"Exploring","Your child starts to argue and snaps back to explore your judgement & behaviour but it's really annoying. How will you tackle it ?","Your simply ignore his behaviour.","You listen to what he is saying and then trick him in doing as per your wish.","You agree to whatever he is saying.","You beat up your kid and tell him that you are the BOSS."  ],
+                      [9,4,"Opposite Sex","Your kid pulls down his friends skirt as a fun prank.How will you react ?","You will ignore his action and let him learn the hard way.","You will laugh about it and ask him to do it never again.","You will scold him and teach him about ethics.","At first you will beat him but later you will counsel him and get him lots of chocolates."  ],
+                      [10,5,"Passion","Your Kid wants to buy a guitar and take classes but you can either send him to tuition class or music class. What will you do?","You make him go for tuition class.","You buy him a guitar but make him go for tuition classes.","You buy him a guitar and let him take music classes.","You manage to get him to tuition as well as the music classes but only after selling his game console."  ],
+                      [11,6,"Abuse","You heard your kid using abusive language with his friend. What will you do ?","You ignore it and are hardly bothered.","You too use abusive language and shut him up.","You beat him and then ground him for a week.","You scold him and ask him to change his company."  ],
+                      [12,7,"Friendship/Family","Your child spends a lot of money on his friends and you know that they trick him in doing it. what will you do?","You will ask him to leave his friends without explaining to him.","You will let me figure it out himself and do nothing.","You will counsel him about their motives and impose the fact to leave them.","You stop giving him money and see how his friends react."  ],
+                      [13,8,"Hormonal Changes","You are cleaning your child's room and found your Adult Magazine under his pillow. what will you do?","You will confront him and beat him up for stealing and seeing it.","You will leave it and get a new one for yourself.","you will take it back and lets him confront it.","You will counsel him about hormonal changes and get him a few more."  ],
+                      [14,9,"Teen Love","You catch your child kissing his girlfriend in his bedroom. What's the next think you'll do? (we advise you to be just, and don't be a sexist)","You will pretend as if you never saw and move away from the room without making a sound.","You will counsel your child about sex and its consequences at his age. Ask him to leave her and concentrate on his studies.","you will call his girlfriend's parents and ask them to make her stay away from him.","You confront him and you beat him up. But later apologize and make peace."  ],
+                      [15,10,"Grades/Creativity","Your child didn't do well in his board exams but he's good in other activity like sports or Music or Painting. Eventually it might turn it into his passion or he can fail as well. what will be your reaction?","You will let him take up any stream and help him to pursue and take that bold risk.","You get him take the stream which you like in some other school.","You beat him up for scoring less in the boards and transfer him to a low grade school.","You make him join the family business but give him a choice to complete his studies."  ],
+                      [16,11,"Rebelious","Your child demands for a car and when denied, shows a rebellious attitude. How will you react considering the fact that you can't buy a car right away ?","You will simply ignore.","You will agree to buy him a car but after sometime.","You counsel him to get a car from his own earnings after sometime.","You will slap him and tell him that he will a get a car when it's the right time."  ],
+                      [17,12,"Love/Career","So you want him to be more career focused and select the best courses available but he wants to join the course which his girlfriend is opting for. What will you do ? ","Let him be his own judge and allow him to do what he feels like doing.","You forcefully make him join the course which you think is best for him and ask him to break off.","You will counsel him but still you make him join the course which you feel was the right option.","You will send him to your relatives in a different country and let him complete his studies there."  ]
+                    ];
+
+
+
+          window.onload = function(){
+              cc.game.onStart = function(){
+                  //load resources
+                  cc.LoaderScene.preload([res.background,res.font,res.icon,res.music,res.click,res.question,res.button], function () {
+
+                    //Main Menu Screen 
+                      var MyScene = cc.Scene.extend({
+                          onEnter:function () {
+                              this._super();
+                              var size = cc.director.getWinSize();
+                              var bg = cc.Sprite.create(res.background);
+                              bg.setPosition(size.width / 2, size.height / 2);
+                              bg.setScaleX(size.width/bg.getContentSize().width);
+                              bg.setScaleY(size.height/bg.getContentSize().height);
+                              bg.setColor(colors.green);
+                              this.addChild(bg, 0);
+
+                              //init game varibles
+                              gameBorn = getRandomInt(0,childType.length - 1);
+                              newBorn = {health : 5,iq : 5, creativity : 5,relationship : 5};
+                              //end
+
+
+                              var label = cc.LabelTTF.create("Parenting 101", "roboto", 40);
+                              label.setPosition(size.width / 2, size.height * 0.90);
+                              this.addChild(label, 1);
+
+
+                              var icon = cc.Sprite.create(res.icon);
+                              icon.setPosition(size.width / 2, size.height / 2);
+                              this.addChild(icon, 3);
+
+                              var playItem = cc.MenuItemFont.create("Play Game", this.menuCallback, this);
+                              playItem.fontName = "roboto";
+                              playItem.setFontSize(40);
+
+                              var credits = cc.LabelTTF.create("Game by Manish Basetia and Sanchit Gulati", "roboto", 18);
+                              credits.setPosition(size.width / 2, size.height * 0.05);
+                              this.addChild(credits, 2);
+
+                              var credits2 = cc.LabelTTF.create("for #byog14: theme || Parenting | Experiment", "roboto", 18);
+                              credits2.setPosition(size.width / 2, size.height * 0.025);
+                              this.addChild(credits2, 2);
+
+                       
+                              var menu = cc.Menu.create(playItem);
+                              menu.setPosition(size.width / 2, size.height * 0.15);
+                              this.addChild(menu);
+
+                              cc.audioEngine.playMusic(res.music, true);
+                          },
+                          menuCallback:function(){
+                            cc.audioEngine.playEffect(res.click);
+                            cc.director.runScene(new GameScene());
+                          }
+                      });
+                    // Game Screen
+                      var GameScene = cc.Scene.extend({
+                        onEnter:function () {
+                              this._super();
+                              var size = cc.director.getWinSize();
+                              var bg = cc.Sprite.create(res.background);
+                              bg.setPosition(size.width / 2, size.height / 2);
+                              bg.setScaleX(size.width/bg.getContentSize().width);
+                              bg.setScaleY(size.height/bg.getContentSize().height);
+                              bg.setColor(colors.purple);
+                              this.addChild(bg, 0);
+
+                              var node = cc.Node.create();
+                              this.addChild(node,1);
+
+                              var string = "";
+                              switch(progress)
+                              {
+                                case 0:case 1:
+                                string = res.age6;
+                                break;
+                                case 2:case 3:case 4:case 5:
+                                string = res.age8;
+                                break;
+                                case 6:case 7:case 8:case 9:
+                                string = res.age12;
+                                case 10:case 11:case 12:case 13:default:
+                                string = res.age16;
+                                break;
+                              }
+
+
+                              var sprite = cc.Sprite.create(string);
+                              sprite.setPosition(size.width / 2, size.height * 0.60);
+                              sprite.setOpacity(100);
+                              sprite.setScale(0.5);
+                              sprite.setAnchorPoint(0.5,0.0);
+                              node.addChild(sprite);
+                              var actionSprite = cc.MoveBy.create(1, cc.p(0,-50));
+                              var ease = cc.EaseBounceOut.create(actionSprite);
+                              sprite.runAction(ease);
+
+
+                              var label = cc.LabelTTF.create("-- Age "+levelJSON[progress][0]+" --","roboto",40);
+                              label.setPosition(size.width / 2, size.height * 0.50);
+                              node.addChild(label);
+
+                              var label2 = cc.LabelTTF.create("-- "+levelJSON[progress][2]+" --","roboto",24);
+                              label2.setPosition(size.width / 2, size.height * 0.40);
+                              label2.setOpacity(0);
+                              node.addChild(label2);
+                              var action = cc.FadeIn.create(2);
+                              label2.runAction(action);
+
+                              var playItem = cc.MenuItemFont.create("continue", this.menuCallback, this);
+                              playItem.fontName = "roboto";
+                              playItem.setFontSize(40);
+                       
+                              var menu = cc.Menu.create(playItem);
+                              menu.setPosition(size.width / 2, size.height * 0.20);
+                              this.addChild(menu);
+                            },
+                          menuCallback:function(){
+                            cc.audioEngine.playEffect(res.click);
+                            cc.director.runScene(new QuestionScene());
+                          }
+                      });
+                    // Game Screen
+                      var QuestionScene = cc.Scene.extend({
+                        onEnter:function () {
+                              this._super();
+                              var size = cc.director.getWinSize();
+                              var bg = cc.Sprite.create(res.background);
+                              bg.setPosition(size.width / 2, size.height / 2);
+                              bg.setScaleX(size.width/bg.getContentSize().width);
+                              bg.setScaleY(size.height/bg.getContentSize().height);
+                              bg.setColor(colors.blue);
+                              this.addChild(bg, 0);
+
+                              var node = cc.Node.create();
+                              this.addChild(node,1);
+
+                              var label = cc.LabelTTF.create(levelJSON[progress][3],"roboto",24,cc.size(size.width  * 0.80, 0), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP);
+                              label.setPosition(size.width / 2, size.height * 0.80);
+                              node.addChild(label);
+
+
+                              var lbl1 = cc.LabelTTF.create(levelJSON[progress][4],"roboto",18,cc.size(size.width  * 0.70, 50), cc.VERTICAL_TEXT_ALIGNMENT_MIDDLE, cc.VERTICAL_TEXT_ALIGNMENT_MIDDLE);
+
+                              var option1 = cc.MenuItemLabel.create(lbl1, this.menuCallback, this);
+                              option1.setPosition(size.width / 2, size.height * 0.50);
+                              option1.setTag(0);
+                              var lbl2 = cc.LabelTTF.create(levelJSON[progress][5],"roboto",18,cc.size(size.width  * 0.70, 50), cc.VERTICAL_TEXT_ALIGNMENT_MIDDLE, cc.VERTICAL_TEXT_ALIGNMENT_MIDDLE);
+                              var option2 = cc.MenuItemLabel.create(lbl2, this.menuCallback, this);
+                              option2.setPosition(size.width / 2, size.height * 0.40);
+                              option2.setTag(1);
+                              var lbl3 = cc.LabelTTF.create(levelJSON[progress][6],"roboto",18,cc.size(size.width  * 0.70, 50), cc.VERTICAL_TEXT_ALIGNMENT_MIDDLE, cc.VERTICAL_TEXT_ALIGNMENT_MIDDLE);
+                              var option3 = cc.MenuItemLabel.create(lbl3, this.menuCallback, this);
+                              option3.setPosition(size.width / 2, size.height * 0.30);
+                              option3.setTag(2);
+                              var lbl4 = cc.LabelTTF.create(levelJSON[progress][7],"roboto",18,cc.size(size.width  * 0.70, 50), cc.VERTICAL_TEXT_ALIGNMENT_MIDDLE, cc.VERTICAL_TEXT_ALIGNMENT_MIDDLE);
+                              var option4 = cc.MenuItemLabel.create(lbl4, this.menuCallback, this);
+                              option4.setPosition(size.width / 2, size.height * 0.20);
+                              option4.setTag(3);
+
+                              
+                              option1.addChild(this.makeBox());
+                              option2.addChild(this.makeBox());
+                              option3.addChild(this.makeBox());
+                              option4.addChild(this.makeBox());
+                              
+                              var menu = cc.Menu.create(option1,option2,option3,option4);
+                              menu.setPosition(0,0);
+                              this.addChild(menu);
+
+
+                              cc.audioEngine.stopMusic();
+                              cc.audioEngine.playMusic(res.question, true);
+
+                            },
+                            makeBox : function()
+                            {
+
+                              var size = cc.director.getWinSize();
+                              var box = cc.Sprite.create(res.button);
+                              box.setScaleX((size.width*0.70 + 20)/box.getContentSize().width);
+                              box.setPosition(-10,-5);
+                              box.setScaleY((50+10)/box.getContentSize().height);
+                              box.setAnchorPoint(0,0);
+                              box.setOpacity(50);
+                              return box;
+                            },
+                            menuCallback : function (sender) {
+                              var idx = sender.getTag();
+                              var row = progress*4+idx;
+                              newBorn.health += gameVaribles[row][3];
+                              newBorn.iq += gameVaribles[row][4];
+                              newBorn.creativity += gameVaribles[row][5];
+                              newBorn.relationship += gameVaribles[row][6];
+
+                              newBorn.health = clamp(newBorn.health,0,10);
+                              newBorn.iq = clamp(newBorn.iq,0,10);
+                              newBorn.creativity = clamp(newBorn.creativity,0,10);
+                              newBorn.relationship = clamp(newBorn.relationship,0,10);
+
+                              cc.audioEngine.playEffect(res.click);
+                              cc.director.runScene(new ResponseScene());
+                            }
+                      });
+                      var ResponseScene = cc.Scene.extend({
+                        onEnter:function () {
+                              this._super();
+                              var size = cc.director.getWinSize();
+                              var bg = cc.Sprite.create(res.background);
+                              bg.setPosition(size.width / 2, size.height / 2);
+                              bg.setScaleX(size.width/bg.getContentSize().width);
+                              bg.setScaleY(size.height/bg.getContentSize().height);
+                              bg.setColor(colors.red);
+                              this.addChild(bg, 0);
+
+                              var node = cc.Node.create();
+                              this.addChild(node,1);
+
+                              var rand = getRandomInt(0,quotes.length-1);
+                              var label = cc.LabelTTF.create("\" "+quotes[rand]+" \"\n- wise parent","roboto",24,cc.size(size.width  * 0.80, 300), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+                              label.setPosition(size.width / 2, size.height * 0.60);
+                              node.addChild(label);
+
+                              var playItem = cc.MenuItemFont.create("continue", this.menuCallback, this);
+                              playItem.fontName = "roboto";
+                              playItem.setFontSize(40);
+                       
+                              var menu = cc.Menu.create(playItem);
+                              menu.setPosition(size.width / 2, size.height * 0.20);
+                              this.addChild(menu);
+
+
+                              cc.audioEngine.stopMusic();
+                              cc.audioEngine.playMusic(res.music,true);
+
+                            },
+                            menuCallback : function(){
+                              cc.audioEngine.playEffect(res.click);
+                              progress++;
+                              if(progress == 12)
+                                cc.director.runScene(new ResultScene());
+                              else
+                                cc.director.runScene(new GameScene());
+                            }
+                      });
+                      var ResultScene = cc.Scene.extend({
+                        onEnter:function () {
+                              this._super();
+                              var size = cc.director.getWinSize();
+                              var bg = cc.Sprite.create(res.background);
+                              bg.setPosition(size.width / 2, size.height / 2);
+                              bg.setScaleX(size.width/bg.getContentSize().width);
+                              bg.setScaleY(size.height/bg.getContentSize().height);
+                              bg.setColor(colors.green);
+                              this.addChild(bg, 0);
+
+                              var node = cc.Node.create();
+                              this.addChild(node,1);
+
+                              var label = cc.LabelTTF.create("-- child was born a/an "+childType[gameBorn].toString()+" --","roboto",21,cc.size(size.width  * 0.80, 300), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+                              label.setPosition(size.width / 2, size.height * 0.60);
+                              node.addChild(label);
+
+                              var iq = cc.LabelTTF.create("IQ\n"+newBorn.iq.toString(),"roboto",16,cc.size(size.width  * 0.20, 300), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+                              iq.setPosition(size.width *0.20, size.height * 0.50);
+                              node.addChild(iq);
+                              var health = cc.LabelTTF.create("Health\n"+newBorn.health.toString(),"roboto",16,cc.size(size.width  * 0.20, 300), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+                              health.setPosition(size.width *0.40, size.height * 0.50);
+                              node.addChild(health);
+                              var creativity = cc.LabelTTF.create("Creativity\n"+newBorn.creativity.toString(),"roboto",16,cc.size(size.width  * 0.20, 300), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+                              creativity.setPosition(size.width *0.60, size.height * 0.50);
+                              node.addChild(creativity);
+                              var relationship = cc.LabelTTF.create("Relationship\n"+newBorn.relationship.toString(),"roboto",16,cc.size(size.width  * 0.20, 300), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+                              relationship.setPosition(size.width *0.80, size.height * 0.50);
+                              node.addChild(relationship);
+
+                              var playItem = cc.MenuItemFont.create("replay", this.menuCallback, this);
+                              playItem.fontName = "roboto";
+                              playItem.setFontSize(40);
+
+                              var value = [0,0,0,0];
+
+                              var grownUp = "";
+                              if(newBorn.iq >= 8)
+                              {
+                                value[0] = 1;
+                                grownUp = "geek";
+                              }
+                              else if(newBorn.iq >= 4)
+                              {
+                                value[0] = -1;
+                              }
+                              if(newBorn.health >= 8)
+                              {
+
+                                value[1] = 1;
+                                grownUp = "jock";
+                              }
+                              else if(newBorn.health >= 4)
+                              {
+                                value[1] = -1;
+                              }
+                              if(newBorn.creativity >= 8)
+                              {
+
+                                value[2] = 1;
+                                grownUp = "artist";
+                              }
+
+                              else if(newBorn.creativity >= 4)
+                              {
+                                value[2] = -1;
+                              }
+                              if(newBorn.relationship >= 8)
+                              {
+
+                                value[3] = 1;
+                                grownUp = "socialist";
+                              }
+                              else if(newBorn.relationship >= 4)
+                              {
+                                value[3] = -1;
+                              }
+
+                              if(value[0] == 1 && value[1] == 1 && value[2] == 1 && value[3] == 1)
+                              {
+                                grownUp = "scholar";
+                              }
+
+                              if(value[0] == -1 && value[1] == -1 && value[2] == -1 && value[3] == -1)
+                              {
+                                grownUp = "scholar";
+                              }
+
+                              if(grownUp == "")
+                                grownUp = "destructive";
+
+                               var result = cc.LabelTTF.create("-- you made him a/an "+grownUp+" --","roboto",18,cc.size(size.width  * 0.80, 300), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+                              result.setPosition(size.width / 2, size.height * 0.40);
+                              node.addChild(result);
+
+                              var resultString = "";
+
+                              if(grownUp == childType[gameBorn].toString())
+                                resultString = "Congrats! you did good. you were the best parent to your child";
+                              else
+                                resultString = "you could do better";
+
+                              var feedback = cc.LabelTTF.create(resultString,"roboto",16,cc.size(size.width  * 0.80, 300), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+                              feedback.setPosition(size.width / 2, size.height * 0.30);
+                              node.addChild(feedback);
+
+                              var todoString = "We wanted to add more dialogues to game,atleast a gender selection,and have personality based child responses (to which parent should adapt to), have a personality based dialog tree so game brings thousands and thousands to outcome and be a real parent helper but alas, #byog14 ends here"
+                              var todoString = cc.LabelTTF.create(todoString,"roboto",12,cc.size(size.width  * 0.90, 0), cc.TEXT_ALIGNMENT_CENTER, cc.VERTICAL_TEXT_ALIGNMENT_TOP)
+                              todoString.setPosition(size.width / 2, size.height * 0.10);
+                              node.addChild(todoString);
+
+
+                       
+                              var menu = cc.Menu.create(playItem);
+                              menu.setPosition(size.width / 2, size.height * 0.20);
+                              this.addChild(menu);
+
+
+                              cc.audioEngine.stopMusic();
+                              cc.audioEngine.playMusic(res.music,true);
+
+                            },
+                            menuCallback : function(){
+                              progress=0;
+                              cc.audioEngine.playEffect(res.click);
+                              cc.director.runScene(new MyScene());
+                            }
+                      });
+
+
+                      cc.director.runScene(new MyScene());
+                  }, this);
+              };
+              cc.game.run("gameCanvas");
+          };
+    </script>
+</body>
+</html>
